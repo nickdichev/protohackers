@@ -19,23 +19,40 @@ defmodule Protohackers.Protocols.PrimeTime do
   @impl GenServer
   def handle_continue(:handshake, {ref, transport, _opts}) do
     {:ok, socket} = :ranch.handshake(ref)
-    :ok = transport.setopts(socket, active: :once)
+    :ok = transport.setopts(socket, active: false)
 
-    {:noreply, {socket, transport}, @timeout}
+    {:noreply, {socket, transport}, {:continue, :loop}}
   end
 
   @impl GenServer
-  def handle_info({:tcp, socket, data}, {socket, transport} = state) do
-    case Protohackers.PrimeTime.handle_request(data) do
-      {:ok, response} ->
-        :ok = transport.send(socket, response)
-        :ok = transport.setopts(socket, active: :once)
-        {:noreply, state, @timeout}
+  def handle_continue(:loop, state) do
+    {socket, transport} = state
+
+    with {:ok, request} <- chunk(socket, transport, ""),
+         {:ok, response} <- Protohackers.PrimeTime.handle_request(request) do
+      :ok = transport.send(socket, response)
+      {:noreply, state, {:continue, :loop}}
+    else
+      {:chunk_error, :closed} ->
+        {:stop, :shutdown, state}
+
+      {:chunk_error, reason} ->
+        Logger.error("Error chunking: #{inspect(reason)}")
+        transport.close(socket)
+        {:stop, :shutdown, state}
 
       {:error, response} ->
         :ok = transport.send(socket, response)
         transport.close(socket)
         {:stop, :shutdown, state}
+    end
+  end
+
+  defp chunk(socket, transport, request) do
+    case transport.recv(socket, 1, :infinity) do
+      {:ok, "\n"} -> {:ok, request}
+      {:ok, data} -> chunk(socket, transport, request <> data)
+      {:error, reason} -> {:chunk_error, reason}
     end
   end
 
