@@ -8,12 +8,10 @@ defmodule Protohackers.Application do
   @impl true
   def start(_type, _args) do
     children = [
-      # Starts a worker by calling: Protohackers.Worker.start_link(arg)
-      # {Protohackers.Worker, arg}
+      {Protohackers.Listener, protocol: Protohackers.Protocols.SmokeTest, port: 5555},
+      {Protohackers.Listener, protocol: Protohackers.Protocols.PrimeTime, port: 5556}
     ]
 
-    # See https://hexdocs.pm/elixir/Supervisor.html
-    # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Protohackers.Supervisor]
     Supervisor.start_link(children, opts)
   end
