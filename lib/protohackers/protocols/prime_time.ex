@@ -1,6 +1,9 @@
 defmodule Protohackers.Protocols.PrimeTime do
   use GenServer
 
+  alias Protohackers.Protocols.PrimeTime.Response
+  alias Protohackers.Protocols.PrimeTime.Request
+
   @behaviour :ranch_protocol
   @timeout 60_000
 
@@ -29,19 +32,20 @@ defmodule Protohackers.Protocols.PrimeTime do
     {socket, transport} = state
 
     with {:ok, request} <- chunk(socket, transport, ""),
-         {:ok, response} <- Protohackers.PrimeTime.handle_request(request) do
+         {:ok, %Request.Valid{} = request} <- Request.parse_request(request) do
+      response = Response.from_request(request) |> Response.format()
       :ok = transport.send(socket, response)
       {:noreply, state, {:continue, :loop}}
     else
       {:chunk_error, :closed} ->
         {:stop, :shutdown, state}
 
-      {:chunk_error, reason} ->
-        Logger.error("Error chunking: #{inspect(reason)}")
+      {:chunk_error, _reason} ->
         transport.close(socket)
         {:stop, :shutdown, state}
 
-      {:error, response} ->
+      {:error, %Request.Malformed{} = request} ->
+        response = Response.from_request(request) |> Response.format()
         :ok = transport.send(socket, response)
         transport.close(socket)
         {:stop, :shutdown, state}
@@ -50,9 +54,15 @@ defmodule Protohackers.Protocols.PrimeTime do
 
   defp chunk(socket, transport, request) do
     case transport.recv(socket, 1, :infinity) do
-      {:ok, "\n"} -> {:ok, request}
-      {:ok, data} -> chunk(socket, transport, request <> data)
-      {:error, reason} -> {:chunk_error, reason}
+      {:ok, "\n"} ->
+        {:ok, request}
+
+      {:ok, data} ->
+        chunk(socket, transport, request <> data)
+
+      {:error, reason} ->
+        Logger.error("Error chunking #{request}: #{inspect(reason)}")
+        {:chunk_error, reason}
     end
   end
 
