@@ -11,6 +11,13 @@ defmodule Protohackers.Protocols.PrimeTime.RequestTest do
                Request.parse_request(request)
     end
 
+    test "parsed a valid request with extra keys" do
+      request = %{method: "isPrime", number: 100, bogus: :key} |> Jason.encode!()
+
+      assert {:ok, %Request.Valid{method: "isPrime", number: 100}} ==
+               Request.parse_request(request)
+    end
+
     test "parses an invalid request (missing method)" do
       request = %{number: 100} |> Jason.encode!()
       assert {:error, %Request.Malformed{}} == Request.parse_request(request)
