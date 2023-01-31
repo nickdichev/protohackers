@@ -31,37 +31,51 @@ defmodule Protohackers.Protocols.MeansToEnd do
 
   @impl GenServer
   def handle_continue(:loop, state) do
-    %{socket: socket, transport: transport, prices: prices} = state
+    %{socket: socket, transport: transport} = state
 
     {:ok, request} = transport.recv(socket, 9, @timeout)
+    parsed_request = Request.parse_request(request)
 
-    case Request.parse_request(request) do
-      {:insert, %{timestamp: timestamp, price: price}} ->
-        state = %{state | prices: [{timestamp, price} | prices]}
-        {:noreply, state, {:continue, :loop}}
+    process_request(parsed_request, state)
+  end
 
-      {:query, %{min_time: min_time, max_time: max_time}} when min_time > max_time ->
-        :ok = transport.send(socket, <<0::big-signed-32>>)
-        {:noreply, state, {:continue, :loop}}
+  defp process_request({:insert, insert_data}, state) do
+    %{timestamp: timestamp, price: price} = insert_data
 
-      {:query, %{min_time: min_time, max_time: max_time}} ->
-        if Enum.empty?(prices) do
-          :ok = transport.send(socket, <<0::big-signed-32>>)
-          {:noreply, state, {:continue, :loop}}
-        else
-          prices_in_range =
-            prices
-            |> Enum.filter(fn {timestamp, _price} ->
-              timestamp >= min_time and timestamp <= max_time
-            end)
-            |> Enum.map(fn {_timestamp, price} -> price end)
+    state = %{state | prices: [{timestamp, price} | state.prices]}
+    {:noreply, state, {:continue, :loop}}
+  end
 
-          average = (Enum.sum(prices_in_range) / length(prices_in_range)) |> floor
+  defp process_request({:query, %{min_time: min_time, max_time: max_time}}, state)
+       when min_time > max_time do
+    %{socket: socket, transport: transport} = state
 
-          :ok = transport.send(socket, <<average::big-signed-32>>)
-          {:noreply, state, {:continue, :loop}}
-        end
-    end
+    :ok = transport.send(socket, <<0::big-signed-32>>)
+    {:noreply, state, {:continue, :loop}}
+  end
+
+  defp process_request({:query, _query}, %{prices: []} = state) do
+    %{socket: socket, transport: transport} = state
+
+    :ok = transport.send(socket, <<0::big-signed-32>>)
+    {:noreply, state, {:continue, :loop}}
+  end
+
+  defp process_request({:query, query}, state) do
+    %{socket: socket, transport: transport, prices: prices} = state
+    %{min_time: min_time, max_time: max_time} = query
+
+    prices_in_range =
+      prices
+      |> Enum.filter(fn {timestamp, _price} ->
+        timestamp >= min_time and timestamp <= max_time
+      end)
+      |> Enum.map(fn {_timestamp, price} -> price end)
+
+    average = (Enum.sum(prices_in_range) / length(prices_in_range)) |> floor()
+
+    :ok = transport.send(socket, <<average::big-signed-32>>)
+    {:noreply, state, {:continue, :loop}}
   end
 
   @impl GenServer
