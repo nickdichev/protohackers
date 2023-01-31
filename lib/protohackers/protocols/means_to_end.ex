@@ -1,7 +1,6 @@
 defmodule Protohackers.Protocols.MeansToEnd do
   use GenServer
 
-  alias Protohackers.Protocols.MeansToEnd.Response
   alias Protohackers.Protocols.MeansToEnd.Request
 
   @behaviour :ranch_protocol
