@@ -29,6 +29,24 @@ defmodule Protohakers.Protocols.MeansToEndTest do
 
       close_socket(socket)
     end
+
+    test "returns proper average when query is valid" do
+      # Given
+      socket = open_socket()
+
+      # When
+      :ok = :gen_tcp.send(socket, insert_message(12345, 100))
+      :ok = :gen_tcp.send(socket, insert_message(12346, 102))
+      :ok = :gen_tcp.send(socket, insert_message(12347, 101))
+      :ok = :gen_tcp.send(socket, insert_message(40960, 5))
+      :ok = :gen_tcp.send(socket, query_message(12288, 16384))
+      {:ok, response} = :gen_tcp.recv(socket, 0)
+
+      # Then
+      assert <<101::big-signed-32>> == response
+
+      close_socket(socket)
+    end
   end
 
   # describe "multiple clients" do

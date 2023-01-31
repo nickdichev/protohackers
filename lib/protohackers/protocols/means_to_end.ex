@@ -22,45 +22,44 @@ defmodule Protohackers.Protocols.MeansToEnd do
   @impl GenServer
   def handle_continue(:handshake, {ref, transport, _opts}) do
     {:ok, socket} = :ranch.handshake(ref)
-    :ok = transport.setopts(socket, active: true)
+    :ok = transport.setopts(socket, active: false)
 
     state = %{socket: socket, transport: transport, prices: []}
 
-    {:noreply, state, @timeout}
+    {:noreply, state, {:continue, :loop}}
   end
 
   @impl GenServer
-  def handle_info({:tcp, socket, data}, state) do
-    %{socket: _socket, transport: transport, prices: prices} = state
+  def handle_continue(:loop, state) do
+    %{socket: socket, transport: transport, prices: prices} = state
 
-    case Request.parse_request(data) do
+    {:ok, request} = transport.recv(socket, 9, @timeout)
+
+    case Request.parse_request(request) do
       {:insert, %{timestamp: timestamp, price: price}} ->
         state = %{state | prices: [{timestamp, price} | prices]}
-        {:noreply, state, @timeout}
+        {:noreply, state, {:continue, :loop}}
 
       {:query, %{min_time: min_time, max_time: max_time}} when min_time > max_time ->
         :ok = transport.send(socket, <<0::big-signed-32>>)
-        {:noreply, state, @timeout}
+        {:noreply, state, {:continue, :loop}}
 
       {:query, %{min_time: min_time, max_time: max_time}} ->
         if Enum.empty?(prices) do
           :ok = transport.send(socket, <<0::big-signed-32>>)
-          {:noreply, state, @timeout}
+          {:noreply, state, {:continue, :loop}}
         else
-          count = length(prices)
-
-          sum =
+          prices_in_range =
             prices
             |> Enum.filter(fn {timestamp, _price} ->
               timestamp >= min_time and timestamp <= max_time
             end)
             |> Enum.map(fn {_timestamp, price} -> price end)
-            |> Enum.sum()
 
-          average = (sum / count) |> IO.inspect() |> floor()
+          average = (Enum.sum(prices_in_range) / length(prices_in_range)) |> floor
 
           :ok = transport.send(socket, <<average::big-signed-32>>)
-          {:noreply, state, @timeout}
+          {:noreply, state, {:continue, :loop}}
         end
     end
   end
