@@ -22,27 +22,47 @@ defmodule Protohackers.Protocols.MeansToEnd do
   @impl GenServer
   def handle_continue(:handshake, {ref, transport, _opts}) do
     {:ok, socket} = :ranch.handshake(ref)
-    :ok = transport.setopts(socket, active: false)
+    :ok = transport.setopts(socket, active: true)
 
-    {:noreply, {socket, transport}, {:continue, :loop}}
+    state = %{socket: socket, transport: transport, prices: []}
+
+    {:noreply, state, @timeout}
   end
 
   @impl GenServer
-  def handle_continue(:loop, state) do
-    {socket, transport} = state
+  def handle_info({:tcp, socket, data}, state) do
+    %{socket: _socket, transport: transport, prices: prices} = state
 
-    {:ok, request} = transport.recv(socket, _length = 9, :infinity)
-
-    case Request.parse_request(request) do
+    case Request.parse_request(data) do
       {:insert, %{timestamp: timestamp, price: price}} ->
-        :ok
+        state = %{state | prices: [{timestamp, price} | prices]}
+        {:noreply, state, @timeout}
+
+      {:query, %{min_time: min_time, max_time: max_time}} when min_time > max_time ->
+        :ok = transport.send(socket, <<0::big-signed-32>>)
+        {:noreply, state, @timeout}
 
       {:query, %{min_time: min_time, max_time: max_time}} ->
-        :ok
-    end
+        if Enum.empty?(prices) do
+          :ok = transport.send(socket, <<0::big-signed-32>>)
+          {:noreply, state, @timeout}
+        else
+          count = length(prices)
 
-    :ok = transport.send(socket, "booo!")
-    {:noreply, state, {:continue, :loop}}
+          sum =
+            prices
+            |> Enum.filter(fn {timestamp, _price} ->
+              timestamp >= min_time and timestamp <= max_time
+            end)
+            |> Enum.map(fn {_timestamp, price} -> price end)
+            |> Enum.sum()
+
+          average = (sum / count) |> IO.inspect() |> floor()
+
+          :ok = transport.send(socket, <<average::big-signed-32>>)
+          {:noreply, state, @timeout}
+        end
+    end
   end
 
   @impl GenServer
