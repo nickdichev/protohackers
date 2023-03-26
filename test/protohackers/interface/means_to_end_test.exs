@@ -1,4 +1,4 @@
-defmodule Protohakers.Protocols.MeansToEndTest do
+defmodule Protohakers.Interface.MeansToEndTest do
   use ExUnit.Case, async: true
 
   describe "single client" do

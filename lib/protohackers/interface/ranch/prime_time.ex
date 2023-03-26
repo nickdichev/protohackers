@@ -1,4 +1,4 @@
-defmodule Protohackers.Protocols.PrimeTime do
+defmodule Protohackers.Interface.Ranch.PrimeTime do
   use GenServer
 
   alias Protohackers.Protocols.PrimeTime.Response

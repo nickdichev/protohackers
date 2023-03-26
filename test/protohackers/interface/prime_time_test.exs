@@ -1,4 +1,4 @@
-defmodule Protohakers.Protocols.PrimeTimeTest do
+defmodule Protohakers.Interface.PrimeTimeTest do
   use ExUnit.Case, async: true
 
   describe "single client" do

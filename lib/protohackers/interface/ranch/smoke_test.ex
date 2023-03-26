@@ -1,4 +1,4 @@
-defmodule Protohackers.Protocols.SmokeTest do
+defmodule Protohackers.Interface.Ranch.SmokeTest do
   use GenServer
 
   @behaviour :ranch_protocol

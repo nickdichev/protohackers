@@ -1,4 +1,4 @@
-defmodule Protohackers.Protocols.MeansToEnd do
+defmodule Protohackers.Interface.Ranch.MeansToEnd do
   use GenServer
 
   alias Protohackers.Protocols.MeansToEnd.Request
@@ -81,11 +81,10 @@ defmodule Protohackers.Protocols.MeansToEnd do
 
     average =
       if count > 0 do
-        (sum / count ) |> floor()
+        (sum / count) |> floor()
       else
         0
       end
-
 
     :ok = transport.send(socket, <<average::big-signed-32>>)
     {:noreply, state, {:continue, :loop}}
