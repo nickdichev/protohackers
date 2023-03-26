@@ -32,10 +32,15 @@ defmodule Protohackers.Protocols.MeansToEnd do
   def handle_continue(:loop, state) do
     %{socket: socket, transport: transport} = state
 
-    {:ok, request} = transport.recv(socket, 9, @timeout)
-    parsed_request = Request.parse_request(request)
+    case transport.recv(socket, 9, @timeout) do
+      {:ok, request} ->
+        parsed_request = Request.parse_request(request)
+        process_request(parsed_request, state)
 
-    process_request(parsed_request, state)
+      {:error, :closed} ->
+        transport.close(socket)
+        {:stop, :shutdown, state}
+    end
   end
 
   defp process_request({:insert, insert_data}, state) do
@@ -71,7 +76,16 @@ defmodule Protohackers.Protocols.MeansToEnd do
       end)
       |> Enum.map(fn {_timestamp, price} -> price end)
 
-    average = (Enum.sum(prices_in_range) / length(prices_in_range)) |> floor()
+    sum = Enum.sum(prices_in_range)
+    count = Enum.count(prices_in_range)
+
+    average =
+      if count > 0 do
+        (sum / count ) |> floor()
+      else
+        0
+      end
+
 
     :ok = transport.send(socket, <<average::big-signed-32>>)
     {:noreply, state, {:continue, :loop}}

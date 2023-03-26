@@ -30,6 +30,23 @@ defmodule Protohakers.Protocols.MeansToEndTest do
       close_socket(socket)
     end
 
+    test "returns 0 when querying and there are no prices in period" do
+      # Given
+      socket = open_socket()
+
+      # When
+      :ok = :gen_tcp.send(socket, insert_message(12345, 100))
+      :ok = :gen_tcp.send(socket, insert_message(12346, 102))
+      :ok = :gen_tcp.send(socket, insert_message(12347, 101))
+      :ok = :gen_tcp.send(socket, query_message(12340, 12344))
+      {:ok, response} = :gen_tcp.recv(socket, 0)
+
+      # Then
+      assert <<0::big-signed-32>> == response
+
+      close_socket(socket)
+    end
+
     test "returns proper average when query is valid" do
       # Given
       socket = open_socket()
