@@ -1,5 +1,5 @@
-defmodule Protohackers.Protocols.PrimeTime.Response do
-  alias Protohackers.Protocols.PrimeTime.Request
+defmodule Protohackers.Core.PrimeTime.Response do
+  alias Protohackers.Core.PrimeTime.Request
 
   defmodule Correct do
     @derive Jason.Encoder

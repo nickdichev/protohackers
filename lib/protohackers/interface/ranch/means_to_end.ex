@@ -1,7 +1,7 @@
 defmodule Protohackers.Interface.Ranch.MeansToEnd do
   use GenServer
 
-  alias Protohackers.Protocols.MeansToEnd.Request
+  alias Protohackers.Core.MeansToEnd.Request
 
   @behaviour :ranch_protocol
   @timeout 60_000

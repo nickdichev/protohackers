@@ -1,8 +1,8 @@
 defmodule Protohackers.Interface.Ranch.PrimeTime do
   use GenServer
 
-  alias Protohackers.Protocols.PrimeTime.Response
-  alias Protohackers.Protocols.PrimeTime.Request
+  alias Protohackers.Core.PrimeTime.Response
+  alias Protohackers.Core.PrimeTime.Request
 
   @behaviour :ranch_protocol
   @timeout 60_000

@@ -1,8 +1,8 @@
-defmodule Protohackers.Protocols.PrimeTime.ResponseTest do
+defmodule Protohackers.Core.PrimeTime.ResponseTest do
   use ExUnit.Case, async: true
 
-  alias Protohackers.Protocols.PrimeTime.Response
-  alias Protohackers.Protocols.PrimeTime.Request
+  alias Protohackers.Core.PrimeTime.Response
+  alias Protohackers.Core.PrimeTime.Request
 
   describe "from_request/1" do
     test "handles a valid request" do

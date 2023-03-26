@@ -1,4 +1,4 @@
-defmodule Protohackers.Protocols.PrimeTime.Request do
+defmodule Protohackers.Core.PrimeTime.Request do
   defmodule Valid do
     defstruct [:method, :number]
   end

@@ -1,4 +1,4 @@
-defmodule Protohackers.Protocols.MeansToEnd.Request do
+defmodule Protohackers.Core.MeansToEnd.Request do
   def parse_request(
         <<"I", timestamp::big-signed-integer-size(32), price::big-signed-integer-size(32)>> =
           _request
