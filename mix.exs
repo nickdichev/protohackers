@@ -23,7 +23,8 @@ defmodule Protohackers.MixProject do
   defp deps do
     [
       {:ranch, "~> 2.1"},
-      {:jason, "~> 1.3"}
+      {:jason, "~> 1.3"},
+      {:thousand_island, "~> 0.6.4"}
     ]
   end
 end
