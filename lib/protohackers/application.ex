@@ -8,9 +8,9 @@ defmodule Protohackers.Application do
   @impl true
   def start(_type, _args) do
     children = [
-      {Protohackers.Listener, protocol: Protohackers.Protocols.SmokeTest, port: 5555},
-      {Protohackers.Listener, protocol: Protohackers.Protocols.PrimeTime, port: 5556},
-      {Protohackers.Listener, protocol: Protohackers.Protocols.MeansToEnd, port: 5557}
+      {Protohackers.RanchListener, protocol: Protohackers.Protocols.SmokeTest, port: 5555},
+      {Protohackers.RanchListener, protocol: Protohackers.Protocols.PrimeTime, port: 5556},
+      {Protohackers.RanchListener, protocol: Protohackers.Protocols.MeansToEnd, port: 5557}
     ]
 
     opts = [strategy: :one_for_one, name: Protohackers.Supervisor]
