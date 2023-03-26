@@ -1,6 +1,6 @@
-# fly.toml file generated for crimson-dawn-3065 on 2022-09-11T08:21:22-07:00
+# fly.toml file generated for summer-sea-5523 on 2023-03-26T11:01:01-07:00
 
-app = "crimson-dawn-3065"
+app = "summer-sea-5523"
 kill_signal = "SIGINT"
 kill_timeout = 5
 processes = []
@@ -44,6 +44,26 @@ processes = []
 
   [[services.ports]]
     port = 5556
+
+  [[services.tcp_checks]]
+    grace_period = "1s"
+    interval = "15s"
+    restart_limit = 0
+    timeout = "2s"
+
+[[services]]
+  http_checks = []
+  internal_port = 5557
+  processes = ["app"]
+  protocol = "tcp"
+  script_checks = []
+  [services.concurrency]
+    hard_limit = 25
+    soft_limit = 20
+    type = "connections"
+
+  [[services.ports]]
+    port = 5557
 
   [[services.tcp_checks]]
     grace_period = "1s"
