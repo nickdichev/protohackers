@@ -1,4 +1,4 @@
-FROM elixir:1.14.0-alpine AS builder
+FROM hexpm/elixir:1.14.2-erlang-24.3.4.10-debian-bullseye-20230227 AS builder
 
 WORKDIR /app
 COPY . .
