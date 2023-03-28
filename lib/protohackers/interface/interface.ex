@@ -9,8 +9,14 @@ defmodule Protohackers.Interface do
 
   def init(_opts) do
     children = [
-      {ThousandIsland, handler_module: Interface.ThousandIsland.SmokeTest, port: 5555},
-      {Protohackers.RanchListener, protocol: Interface.Ranch.PrimeTime, port: 5556},
+      Supervisor.child_spec(
+        {ThousandIsland, handler_module: Interface.ThousandIsland.SmokeTest, port: 5555},
+        id: {ThousandIsland, :smoke}
+      ),
+      Supervisor.child_spec(
+        {ThousandIsland, handler_module: Interface.ThousandIsland.PrimeTime, port: 5556},
+        id: {ThousandIsland, :prime}
+      ),
       {Protohackers.RanchListener, protocol: Interface.Ranch.MeansToEnd, port: 5557}
     ]
 
